@@ -10,4 +10,4 @@ cd ..
 ./make_bootimg.sh
 cd out
 sign_img mainline-boot.img
-fastboot boot mainline-boot.img.signed
+echo fastboot flash boot mainline-boot.img
