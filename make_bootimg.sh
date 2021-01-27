@@ -11,7 +11,7 @@ rm out/*
 # 'drm.debug=31' - verbose logging in drm drivers
 # 'clk_ignore_unused pd_ignore_unused' - keep unused clocks and power domains enabled
 # 'PMOS_NO_OUTPUT_REDIRECT' - print postmarketOS ramdisk output to the serial console
-cmdline='rdinit=/init earlycon=msm_serial_dm,0xf991e000 PMOS_NO_OUTPUT_REDIRECT clk_ignore_unused pd_ignore_unused cma=500m msm.vram=192m' # debug drm.debug=31'
+cmdline='rdinit=/init earlycon=msm_serial_dm,0xf991e000 PMOS_NO_OUTPUT_REDIRECT clk_ignore_unused pd_ignore_unused cma=500m msm.vram=192m msm.allow_vram_carveout=1' # debug drm.debug=31'
 mkbootimg \
     --base 0 \
     --pagesize 2048 \
