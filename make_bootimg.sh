@@ -20,6 +20,19 @@ cmdline='console=tty0 console=ttyMSM0,115200,n8 PMOS_NO_OUTPUT_REDIRECT deferred
 cmdline='rdinit=/init PMOS_NO_OUTPUT_REDIRECT clk_ignore_unused pd_ignore_unused'
 # TODO need better cmdline solution here - maybe file?
 
+case "$deviceinfo_arch" in
+    armv7)
+        kernel_image="arch/arm/boot/zImage-dtb"
+        ;;
+    aarch64)
+        kernel_image="arch/arm64/boot/Image.gz-dtb"
+        ;;
+    *)
+        echo "ERROR: Architecture $deviceinfo_arch is not supported!"
+        exit 1
+        ;;
+esac
+
 mkbootimg \
     --base "$deviceinfo_flash_offset_base" \
     --pagesize "$deviceinfo_flash_pagesize" \
@@ -28,6 +41,6 @@ mkbootimg \
     --second_offset "$deviceinfo_flash_offset_second" \
     --tags_offset "$deviceinfo_flash_offset_tags" \
     --cmdline "$cmdline" \
-    --kernel arch/arm/boot/zImage-dtb \
+    --kernel "$kernel_image" \
     --ramdisk "$DIR"/ramdisk-"$device".cpio.gz \
     -o out/mainline-boot.img
