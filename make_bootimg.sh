@@ -1,9 +1,9 @@
-#!/bin/bash -x
+#!/bin/bash -ex
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 mkdir -p out/
-rm out/*
+rm -f out/*
 
 device="$1"
 pmaports_dir="$(pmbootstrap config aports)"
