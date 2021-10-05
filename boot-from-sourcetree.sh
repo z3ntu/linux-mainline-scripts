@@ -34,5 +34,10 @@ case "$deviceinfo_arch" in
         ;;
 esac
 
+if [ "$deviceinfo_bootimg_mtk_mkimage" == "true" ]; then
+    mv arch/arm/boot/zImage-dtb arch/arm/boot/zImage-dtb.orig
+    mtk_mkimage.sh KERNEL arch/arm/boot/zImage-dtb.orig arch/arm/boot/zImage-dtb
+fi
+
 "$DIR"/make_bootimg.sh "$device"
 echo fastboot flash:raw boot out/mainline-boot.img
