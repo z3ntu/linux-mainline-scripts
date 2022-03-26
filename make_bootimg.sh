@@ -10,7 +10,7 @@ pmaports_dir="$(pmbootstrap config aports)"
 source "$pmaports_dir"/device/*/device-"$device"/deviceinfo
 
 # Read the cmdline for the device from a file
-cmdline=$(cat "$DIR/$device.cmdline")
+cmdline=$(cat "$DIR"/files/"$device".cmdline)
 
 case "$deviceinfo_arch" in
     armv7)
@@ -34,5 +34,5 @@ mkbootimg \
     --tags_offset "$deviceinfo_flash_offset_tags" \
     --cmdline "$cmdline" \
     --kernel "$kernel_image" \
-    --ramdisk "$DIR"/ramdisk-"$device".cpio.gz \
+    --ramdisk "$DIR"/files/ramdisk-"$device".cpio.gz \
     -o out/mainline-boot.img
