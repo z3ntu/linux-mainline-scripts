@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -eu
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -24,9 +24,11 @@ fi
 case "$deviceinfo_arch" in
     armv7)
         cat arch/arm/boot/zImage arch/arm/boot/dts/"$dtb".dtb > arch/arm/boot/zImage-dtb
+        kernel_image="arch/arm/boot/zImage-dtb"
         ;;
     aarch64)
         cat arch/arm64/boot/Image.gz arch/arm64/boot/dts/"$dtb".dtb > arch/arm64/boot/Image.gz-dtb
+        kernel_image="arch/arm64/boot/Image.gz-dtb"
         ;;
     *)
         echo "ERROR: Architecture $deviceinfo_arch is not supported!"
@@ -39,5 +41,22 @@ if [ "$deviceinfo_bootimg_mtk_mkimage" == "true" ]; then
     mtk_mkimage.sh KERNEL arch/arm/boot/zImage-dtb.orig arch/arm/boot/zImage-dtb
 fi
 
-"$DIR"/make_bootimg.sh "$device"
-echo fastboot flash:raw boot out/mainline-boot.img
+# Read the cmdline for the device from a file
+cmdline=$(cat "$DIR"/files/"$device".cmdline)
+
+mkdir -p out/
+rm -f out/*
+
+mkbootimg \
+    --base "$deviceinfo_flash_offset_base" \
+    --pagesize "$deviceinfo_flash_pagesize" \
+    --kernel_offset "$deviceinfo_flash_offset_kernel" \
+    --ramdisk_offset "$deviceinfo_flash_offset_ramdisk" \
+    --second_offset "$deviceinfo_flash_offset_second" \
+    --tags_offset "$deviceinfo_flash_offset_tags" \
+    --cmdline "$cmdline" \
+    --kernel "$kernel_image" \
+    --ramdisk "$DIR"/files/ramdisk-"$device".cpio.gz \
+    -o out/mainline-boot.img
+
+echo SUCCESS: out/mainline-boot.img
