@@ -1,5 +1,5 @@
-#!/bin/bash -x
+#!/bin/bash -e
 
-rm ../ramdisk.cpio.gz
+rm -f ../ramdisk.cpio.gz
 
-find . -not -path "./.git/*" | cpio -o -H newc | gzip > ../ramdisk.cpio.gz
+find . -not -path "./.git/*" | cpio --quiet -o -H newc | gzip > ../ramdisk.cpio.gz
