@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -7,9 +7,95 @@ if [ ! -f arch/arm/boot/zImage ] && [ ! -f arch/arm64/boot/Image.gz ]; then
     exit 1
 fi
 
+function usage() {
+    echo "Usage: $0 [OPTION] device"
+    echo "Assembles boot.img from compiled kernel."
+    echo "Removes old kernel modules from ramdisk, replace with specified ones."
+    echo "Modifies deviceinfo_modules_initfs so modules are loaded automatically (disable with --no-module-load)"
+    echo
+    echo " -m, --modules=MODULES        comma-separated list of modules to use"
+    echo " -p, --modules-pmaports       take module list from device package"
+    echo " -e, --extra-modules=MODULES  comma-separated list of modules to append to existing list (to be used with --modules-pmaports)"
+    echo " --no-module-load             disable automatic loading of modules in ramdisk"
+    echo " -h, --help                   show this help text"
+}
+
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,help
+OPTIONS=pm:e:h
+
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [ "$?" -ne 0 ]; then
+    usage
+    exit 2
+fi
+eval set -- "$PARSED"
+
+arg_modules_pmaports=0
+arg_modules=
+arg_extra_modules=
+no_module_load=0
+modules=
+while true; do
+    case "$1" in
+        -p|--modules-pmaports)
+            arg_modules_pmaports=1
+            shift
+            ;;
+        -m|--modules)
+            arg_modules="$2"
+            shift 2
+            ;;
+        -e|--extra-modules)
+            arg_extra_modules="$2"
+            shift 2
+            ;;
+        --no-module-load)
+            no_module_load=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Arg error"
+            usage
+            exit 3
+            ;;
+    esac
+done
+
+if [ $# -ne 1 ]; then
+    echo "Need to provide device name"
+    usage
+    exit 4
+fi
+
 device="$1"
 pmaports_dir="$(pmbootstrap config aports)"
 source "$pmaports_dir"/device/*/device-"$device"/deviceinfo
+
+# Process more arguments
+if [ "$arg_modules_pmaports" -eq 1 ]; then
+    if [ -n "$deviceinfo_modules_initfs_mainline" ]; then
+        modules="$deviceinfo_modules_initfs_mainline"
+    elif [ -n "$deviceinfo_modules_initfs" ]; then
+        modules="$deviceinfo_modules_initfs"
+    else
+        echo "Failed to find deviceinfo_modules_initfs"
+        exit 5
+    fi
+fi
+if [ -n "$arg_modules" ]; then
+    modules="${arg_modules/,/ }"
+fi
+if [ -n "$arg_extra_modules" ]; then
+    modules="$modules ${arg_extra_modules/,/ }"
+fi
 
 dtb=""
 if [ -n "$deviceinfo_dtb_mainline" ]; then
@@ -45,7 +131,86 @@ fi
 cmdline=$(cat "$DIR"/files/"$device".cmdline)
 
 mkdir -p out/
-rm -f out/*
+rm -rf out/*
+
+ramdisk="$DIR"/files/ramdisk-"$device".cpio.gz
+
+# Copy a module and all its dependencies into the ramdisk
+function copy_module {
+    module=$1
+    results=($(echo "$all_modules" | grep "/$module.ko" || true))
+    if [ ${#results[@]} -ne 1 ]; then
+        echo "Didn't find one result for '$module.ko': ${results[@]}"
+        exit 1
+    fi
+
+    dst=out/ramdisk/lib/modules/$KERNELRELEASE/kernel/${results[0]}
+    mkdir -p $(dirname $dst)
+    cp ${results[0]} $dst
+
+    depends_str=$(modinfo --field=depends ${results[0]})
+    depends=(${depends_str//,/ })
+
+    for depend in "${depends[@]}"; do
+        copy_module $depend
+    done
+}
+
+function handle_ramdisk_modules() {
+    # Remove existing modules and create path for new ones
+    KERNELRELEASE=$(cat include/config/kernel.release)
+    rm -rf out/ramdisk/lib/modules
+    mkdir -p out/ramdisk/lib/modules/$KERNELRELEASE/kernel/
+
+    cp modules.order modules.builtin out/ramdisk/lib/modules/$KERNELRELEASE/
+
+    # Get all modules in source tree for later operation
+    all_modules="$(find . -not -path "./out/*" -name "*.ko")"
+
+    if [ -n "$modules" ]; then
+        echo "Copying modules: $modules"
+    else
+        echo "Copying no modules."
+    fi
+    for module in $modules; do
+        copy_module $module
+    done
+
+    # Generate modules.dep and map files
+    depmod -b out/ramdisk $KERNELRELEASE
+
+    echo -e "\n# Appended by boot-from-sourcetree.sh" >> out/ramdisk/etc/deviceinfo
+    if [ "$no_module_load" -eq 0 ]; then
+        echo "deviceinfo_modules_initfs=\"$modules\"" >> out/ramdisk/etc/deviceinfo
+    else
+        echo "deviceinfo_modules_initfs=\"\"" >> out/ramdisk/etc/deviceinfo
+    fi
+}
+
+function handle_ramdisk() {
+    # Extract original ramdisk
+    # TODO: Breaks with MTK ramdisk header
+    mkdir -p out/ramdisk
+    pushd out/ramdisk >/dev/null
+    gunzip -c $ramdisk | cpio --extract --quiet
+    popd >/dev/null
+
+    handle_ramdisk_modules
+
+    # Repack ramdisk
+    pushd out/ramdisk >/dev/null
+    "$DIR"/make_ramdisk.sh
+    popd >/dev/null
+
+    if [ "$deviceinfo_bootimg_mtk_mkimage" == "true" ]; then
+        mv out/ramdisk.cpio.gz out/ramdisk.cpio.gz.orig
+        mtk_mkimage.sh ROOTFS out/ramdisk.cpio.gz.orig out/ramdisk.cpio.gz
+    fi
+
+    ramdisk=out/ramdisk.cpio.gz
+}
+
+handle_ramdisk
 
 mkbootimg \
     --base "$deviceinfo_flash_offset_base" \
@@ -56,7 +221,7 @@ mkbootimg \
     --tags_offset "$deviceinfo_flash_offset_tags" \
     --cmdline "$cmdline" \
     --kernel "$kernel_image" \
-    --ramdisk "$DIR"/files/ramdisk-"$device".cpio.gz \
+    --ramdisk "$ramdisk" \
     -o out/mainline-boot.img
 
 echo SUCCESS: out/mainline-boot.img
