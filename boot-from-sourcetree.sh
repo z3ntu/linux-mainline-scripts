@@ -17,10 +17,11 @@ function usage() {
     echo " -p, --modules-pmaports       take module list from device package"
     echo " -e, --extra-modules=MODULES  comma-separated list of modules to append to existing list (to be used with --modules-pmaports)"
     echo " --no-module-load             disable automatic loading of modules in ramdisk"
+    echo " --hook=HOOK                  enable specified hook"
     echo " -h, --help                   show this help text"
 }
 
-LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,help
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,help,hook:
 OPTIONS=pm:e:h
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -35,6 +36,7 @@ arg_modules=
 arg_extra_modules=
 no_module_load=0
 modules=
+hook=
 while true; do
     case "$1" in
         -p|--modules-pmaports)
@@ -52,6 +54,10 @@ while true; do
         --no-module-load)
             no_module_load=1
             shift
+            ;;
+        --hook)
+            hook="$2"
+            shift 2
             ;;
         -h|--help)
             usage
@@ -133,7 +139,7 @@ cmdline=$(cat "$DIR"/files/"$device".cmdline)
 mkdir -p out/
 rm -rf out/*
 
-ramdisk="$DIR"/files/ramdisk-"$device".cpio.gz
+ramdisk="$DIR"/files/ramdisk-"$device".cpio.gz_debug
 
 # Copy a module and all its dependencies into the ramdisk
 function copy_module {
@@ -187,6 +193,14 @@ function handle_ramdisk_modules() {
     fi
 }
 
+function handle_ramdisk_hooks() {
+    # Remove existing hooks
+    rm out/ramdisk/etc/postmarketos-mkinitfs/hooks/*
+
+    echo "Hook: $hook"
+    cp -v "$pmaports_dir"/main/postmarketos-mkinitfs-hook-$hook/*.sh out/ramdisk/etc/postmarketos-mkinitfs/hooks/
+}
+
 function handle_ramdisk() {
     # Extract original ramdisk
     # TODO: Breaks with MTK ramdisk header
@@ -196,6 +210,7 @@ function handle_ramdisk() {
     popd >/dev/null
 
     handle_ramdisk_modules
+    handle_ramdisk_hooks
 
     # Repack ramdisk
     pushd out/ramdisk >/dev/null
