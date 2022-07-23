@@ -168,7 +168,7 @@ function handle_ramdisk_modules() {
     rm -rf out/ramdisk/lib/modules
     mkdir -p out/ramdisk/lib/modules/$KERNELRELEASE/kernel/
 
-    cp modules.order modules.builtin out/ramdisk/lib/modules/$KERNELRELEASE/
+    cp modules.order modules.builtin modules.builtin.modinfo out/ramdisk/lib/modules/$KERNELRELEASE/
 
     # Get all modules in source tree for later operation
     all_modules="$(find . -not -path "./out/*" -name "*.ko")"
