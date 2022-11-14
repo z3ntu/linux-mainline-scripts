@@ -97,10 +97,10 @@ if [ "$arg_modules_pmaports" -eq 1 ]; then
     fi
 fi
 if [ -n "$arg_modules" ]; then
-    modules="${arg_modules/,/ }"
+    modules="${arg_modules//,/ }"
 fi
 if [ -n "$arg_extra_modules" ]; then
-    modules="$modules ${arg_extra_modules/,/ }"
+    modules="$modules ${arg_extra_modules//,/ }"
 fi
 
 dtb=""
