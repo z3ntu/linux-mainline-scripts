@@ -12,7 +12,6 @@ else
 fi
 
 pandoc "$1" --from gfm --to mediawiki |
-    sed 's/{|/{| class="wikitable"/' |
     sed 's|{DSP}|<ref name="DSP"/>|' |
     sed 's|{CCI}|<ref name="CCI"/>|' |
     $COPY_PROG
