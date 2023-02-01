@@ -5,8 +5,14 @@ if [ ! -f "$1" ]; then
     exit 1
 fi
 
+if [ -n "$WAYLAND_DISPLAY" ]; then
+    COPY_PROG="wl-copy"
+else
+    COPY_PROG="xsel --clipboard"
+fi
+
 pandoc "$1" --from gfm --to mediawiki |
     sed 's/{|/{| class="wikitable"/' |
     sed 's|{DSP}|<ref name="DSP"/>|' |
     sed 's|{CCI}|<ref name="CCI"/>|' |
-    xsel --clipboard
+    $COPY_PROG
