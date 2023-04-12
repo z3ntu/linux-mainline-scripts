@@ -241,6 +241,7 @@ mkbootimg \
     --cmdline "$cmdline" \
     --kernel "$kernel_image" \
     --ramdisk "$ramdisk" \
+    $deviceinfo_bootimg_custom_args \
     -o out/mainline-boot.img
 
 echo SUCCESS: out/mainline-boot.img
