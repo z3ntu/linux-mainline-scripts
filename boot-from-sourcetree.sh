@@ -195,13 +195,13 @@ function handle_ramdisk_modules() {
 
 function handle_ramdisk_hooks() {
     # Remove existing hooks
-    rm out/ramdisk/etc/postmarketos-mkinitfs/hooks/*
+    rm out/ramdisk/hooks/*
 
     if [ -z "$hook" ]; then
         echo "No hooks specified."
     else
         echo "Hook: $hook"
-        cp -v "$pmaports_dir"/main/postmarketos-mkinitfs-hook-$hook/*.sh out/ramdisk/etc/postmarketos-mkinitfs/hooks/
+        cp -v "$pmaports_dir"/main/postmarketos-mkinitfs-hook-$hook/*.sh out/ramdisk/hooks/
     fi
 }
 
