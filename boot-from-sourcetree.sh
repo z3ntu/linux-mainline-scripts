@@ -231,6 +231,11 @@ function handle_ramdisk() {
 
 handle_ramdisk
 
+extra_args=()
+if [ -n "$deviceinfo_header_version" ]; then
+    extra_args+=("--header_version" "$deviceinfo_header_version")
+fi
+
 mkbootimg \
     --base "$deviceinfo_flash_offset_base" \
     --pagesize "$deviceinfo_flash_pagesize" \
@@ -242,6 +247,7 @@ mkbootimg \
     --kernel "$kernel_image" \
     --ramdisk "$ramdisk" \
     $deviceinfo_bootimg_custom_args \
+    "${extra_args[@]}" \
     -o out/mainline-boot.img
 
 echo SUCCESS: out/mainline-boot.img
