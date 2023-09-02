@@ -152,14 +152,14 @@ function copy_module {
     fi
 
     dst=out/ramdisk/lib/modules/$KERNELRELEASE/kernel/${results[0]}
-    mkdir -p $(dirname $dst)
-    cp ${results[0]} $dst
+    mkdir -p "$(dirname "$dst")"
+    cp "${results[0]}" "$dst"
 
-    depends_str=$(modinfo --field=depends ${results[0]})
+    depends_str=$(modinfo --field=depends "${results[0]}")
     depends=(${depends_str//,/ })
 
     for depend in "${depends[@]}"; do
-        copy_module $depend
+        copy_module "$depend"
     done
 }
 
@@ -167,9 +167,9 @@ function handle_ramdisk_modules() {
     # Remove existing modules and create path for new ones
     KERNELRELEASE=$(cat include/config/kernel.release)
     rm -rf out/ramdisk/lib/modules
-    mkdir -p out/ramdisk/lib/modules/$KERNELRELEASE/kernel/
+    mkdir -p out/ramdisk/lib/modules/"$KERNELRELEASE"/kernel/
 
-    cp modules.order modules.builtin modules.builtin.modinfo out/ramdisk/lib/modules/$KERNELRELEASE/
+    cp modules.order modules.builtin modules.builtin.modinfo out/ramdisk/lib/modules/"$KERNELRELEASE"/
 
     # Get all modules in source tree for later operation
     all_modules="$(find . -not -path "./out/*" -name "*.ko")"
@@ -180,11 +180,11 @@ function handle_ramdisk_modules() {
         echo "Copying no modules."
     fi
     for module in $modules; do
-        copy_module $module
+        copy_module "$module"
     done
 
     # Generate modules.dep and map files
-    depmod -b out/ramdisk $KERNELRELEASE
+    depmod -b out/ramdisk "$KERNELRELEASE"
 
     echo -e "\n# Appended by boot-from-sourcetree.sh" >> out/ramdisk/etc/deviceinfo
     if [ "$no_module_load" -eq 0 ]; then
@@ -202,7 +202,7 @@ function handle_ramdisk_hooks() {
         echo "No hooks specified."
     else
         echo "Hook: $hook"
-        cp -v "$pmaports_dir"/main/postmarketos-mkinitfs-hook-$hook/*.sh out/ramdisk/hooks/
+        cp -v "$pmaports_dir"/main/postmarketos-mkinitfs-hook-"$hook"/*.sh out/ramdisk/hooks/
     fi
 }
 
@@ -211,7 +211,7 @@ function handle_ramdisk() {
     # TODO: Breaks with MTK ramdisk header
     mkdir -p out/ramdisk
     pushd out/ramdisk >/dev/null
-    gunzip -c $ramdisk | cpio --extract --quiet
+    gunzip -c "$ramdisk" | cpio --extract --quiet
     popd >/dev/null
 
     handle_ramdisk_modules
