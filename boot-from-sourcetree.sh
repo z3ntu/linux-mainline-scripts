@@ -115,7 +115,8 @@ fi
 
 case "$deviceinfo_arch" in
     armv7)
-        cat arch/arm/boot/zImage arch/arm/boot/dts/"$dtb".dtb > arch/arm/boot/zImage-dtb
+        # TODO: Remove hardcoded 'qcom' path, use globs or something
+        cat arch/arm/boot/zImage arch/arm/boot/dts/qcom/"$dtb".dtb > arch/arm/boot/zImage-dtb
         kernel_image="arch/arm/boot/zImage-dtb"
         ;;
     aarch64)
