@@ -83,14 +83,15 @@ fi
 
 device="$1"
 pmaports_dir="$(pmbootstrap config aports)"
-source "$pmaports_dir"/device/*/device-"$device"/deviceinfo
+device_dir="$(ls -d "$pmaports_dir"/device/*/device-"$device"/)"
+source "$device_dir"/deviceinfo
 
 # Process more arguments
 if [ "$arg_modules_pmaports" -eq 1 ]; then
-    if [ -n "$deviceinfo_modules_initfs_mainline" ]; then
-        modules="$deviceinfo_modules_initfs_mainline"
-    elif [ -n "$deviceinfo_modules_initfs" ]; then
-        modules="$deviceinfo_modules_initfs"
+    if [ -f "$device_dir"/modules-initfs.mainline ]; then
+        modules="$(tr '\n' ' ' < "$device_dir"/modules-initfs.mainline)"
+    elif [ -f "$device_dir"/modules-initfs ]; then
+        modules="$(tr '\n' ' ' < "$device_dir"/modules-initfs)"
     else
         echo "Failed to find deviceinfo_modules_initfs"
         exit 5
@@ -186,11 +187,8 @@ function handle_ramdisk_modules() {
     # Generate modules.dep and map files
     depmod -b out/ramdisk "$KERNELRELEASE"
 
-    echo -e "\n# Appended by boot-from-sourcetree.sh" >> out/ramdisk/etc/deviceinfo
     if [ "$no_module_load" -eq 0 ]; then
-        echo "deviceinfo_modules_initfs=\"$modules\"" >> out/ramdisk/etc/deviceinfo
-    else
-        echo "deviceinfo_modules_initfs=\"\"" >> out/ramdisk/etc/deviceinfo
+        echo "$modules" | tr ' ' '\n' > out/ramdisk/lib/modules/initramfs.load
     fi
 }
 
