@@ -114,6 +114,11 @@ else
     exit 1
 fi
 
+if [ "$deviceinfo_header_version" -gt 2 ]; then
+    echo "Unsupported boot image header version $deviceinfo_header_version"
+    exit 1
+fi
+
 case "$deviceinfo_arch" in
     armv7)
         # TODO: Remove hardcoded 'qcom' path, use globs or something
@@ -121,8 +126,12 @@ case "$deviceinfo_arch" in
         kernel_image="arch/arm/boot/zImage-dtb"
         ;;
     aarch64)
-        cat arch/arm64/boot/Image.gz arch/arm64/boot/dts/"$dtb".dtb > arch/arm64/boot/Image.gz-dtb
-        kernel_image="arch/arm64/boot/Image.gz-dtb"
+        if [ "$deviceinfo_header_version" -eq 2 ]; then
+            kernel_image="arch/arm64/boot/Image.gz"
+        else
+            cat arch/arm64/boot/Image.gz arch/arm64/boot/dts/"$dtb".dtb > arch/arm64/boot/Image.gz-dtb
+            kernel_image="arch/arm64/boot/Image.gz-dtb"
+        fi
         ;;
     *)
         echo "ERROR: Architecture $deviceinfo_arch is not supported!"
@@ -233,6 +242,10 @@ handle_ramdisk
 extra_args=()
 if [ -n "$deviceinfo_header_version" ]; then
     extra_args+=("--header_version" "$deviceinfo_header_version")
+    if [ "$deviceinfo_header_version" -eq 2 ]; then
+        extra_args+=("--dtb" "arch/arm64/boot/dts/$dtb.dtb")
+        extra_args+=("--dtb_offset" "$deviceinfo_flash_offset_dtb")
+    fi
 fi
 
 mkbootimg \
