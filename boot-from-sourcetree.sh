@@ -114,6 +114,11 @@ else
     exit 1
 fi
 
+# Consider header_version to be 0 when not set, following AOSP docs
+if [ -z "$deviceinfo_header_version" ]; then
+    deviceinfo_header_version=0
+fi
+
 if [ "$deviceinfo_header_version" -gt 2 ]; then
     echo "Unsupported boot image header version $deviceinfo_header_version"
     exit 1
