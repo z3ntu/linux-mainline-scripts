@@ -17,12 +17,13 @@ function usage() {
     echo " -p, --modules-pmaports       take module list from device package"
     echo " -e, --extra-modules=MODULES  comma-separated list of modules to append to existing list (to be used with --modules-pmaports)"
     echo " --no-module-load             disable automatic loading of modules in ramdisk"
+    echo " -d, --debug-shell                boot into debug-shell"
     echo " --hook=HOOK                  enable specified hook"
     echo " -h, --help                   show this help text"
 }
 
-LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,help,hook:
-OPTIONS=pm:e:h
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,debug-shell,help,hook:
+OPTIONS=pm:e:dh
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [ "$?" -ne 0 ]; then
@@ -37,6 +38,7 @@ arg_extra_modules=
 no_module_load=0
 modules=
 hook=
+debug_shell=0
 while true; do
     case "$1" in
         -p|--modules-pmaports)
@@ -53,6 +55,10 @@ while true; do
             ;;
         --no-module-load)
             no_module_load=1
+            shift
+            ;;
+        -d|--debug-shell)
+            debug_shell=1
             shift
             ;;
         --hook)
@@ -152,6 +158,11 @@ fi
 # Read the cmdline for the device from a file
 cmdline=$(cat "$DIR"/files/"$device".cmdline)
 
+if [ "$debug_shell" -eq 1 ]; then
+    echo "Enabling boot into debug-shell."
+    cmdline="$cmdline pmos.debug-shell"
+fi
+
 mkdir -p out/
 rm -rf out/*
 
@@ -208,7 +219,7 @@ function handle_ramdisk_modules() {
 
 function handle_ramdisk_hooks() {
     # Remove existing hooks
-    rm out/ramdisk/hooks/*
+    rm -f out/ramdisk/hooks/*
 
     if [ -z "$hook" ]; then
         echo "No hooks specified."
