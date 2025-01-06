@@ -150,9 +150,9 @@ case "$deviceinfo_arch" in
         ;;
 esac
 
-if [ "$deviceinfo_bootimg_mtk_mkimage" == "true" ]; then
+if [ -n "$deviceinfo_bootimg_mtk_label_kernel" ]; then
     mv arch/arm/boot/zImage-dtb arch/arm/boot/zImage-dtb.orig
-    mtk_mkimage.sh KERNEL arch/arm/boot/zImage-dtb.orig arch/arm/boot/zImage-dtb
+    mtk_mkimage.sh "$deviceinfo_bootimg_mtk_label_kernel" arch/arm/boot/zImage-dtb.orig arch/arm/boot/zImage-dtb
 fi
 
 # Read the cmdline for the device from a file
@@ -245,9 +245,9 @@ function handle_ramdisk() {
     "$DIR"/make_ramdisk.sh
     popd >/dev/null
 
-    if [ "$deviceinfo_bootimg_mtk_mkimage" == "true" ]; then
+    if [ -n "$deviceinfo_bootimg_mtk_label_ramdisk" ]; then
         mv out/ramdisk.cpio.gz out/ramdisk.cpio.gz.orig
-        mtk_mkimage.sh ROOTFS out/ramdisk.cpio.gz.orig out/ramdisk.cpio.gz
+        mtk_mkimage.sh "$deviceinfo_bootimg_mtk_label_ramdisk" out/ramdisk.cpio.gz.orig out/ramdisk.cpio.gz
     fi
 
     ramdisk=out/ramdisk.cpio.gz
