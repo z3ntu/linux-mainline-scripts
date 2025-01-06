@@ -151,8 +151,8 @@ case "$deviceinfo_arch" in
 esac
 
 if [ -n "$deviceinfo_bootimg_mtk_label_kernel" ]; then
-    mv arch/arm/boot/zImage-dtb arch/arm/boot/zImage-dtb.orig
-    mtk_mkimage.sh "$deviceinfo_bootimg_mtk_label_kernel" arch/arm/boot/zImage-dtb.orig arch/arm/boot/zImage-dtb
+    mv "$kernel_image" "$kernel_image.orig"
+    mtk_mkimage.sh "$deviceinfo_bootimg_mtk_label_kernel" "$kernel_image.orig" "$kernel_image"
 fi
 
 # Read the cmdline for the device from a file
