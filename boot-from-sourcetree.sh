@@ -56,6 +56,7 @@ while true; do
             shift 2
             ;;
         --no-module-load)
+            echo "FIXME: --no-module-load doesn't seem to work anymore? Something still loads the modules"
             no_module_load=1
             shift
             ;;
