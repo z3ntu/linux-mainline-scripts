@@ -17,13 +17,14 @@ function usage() {
     echo " -p, --modules-pmaports       take module list from device package"
     echo " -e, --extra-modules=MODULES  comma-separated list of modules to append to existing list (to be used with --modules-pmaports)"
     echo " --no-module-load             disable automatic loading of modules in ramdisk"
-    echo " -d, --debug-shell                boot into debug-shell"
+    echo " --extra-files                comma-separated list to copy into the ramdisk into /extra-files/"
+    echo " -d, --debug-shell            boot into debug-shell"
     echo " --hook=HOOK                  enable specified hook"
     echo " -h, --help                   show this help text"
 }
 
-LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,debug-shell,help,hook:
-OPTIONS=pm:e:dh
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,debug-shell,help,hook:
+OPTIONS=pm:e::dh
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [ "$?" -ne 0 ]; then
@@ -35,6 +36,7 @@ eval set -- "$PARSED"
 arg_modules_pmaports=0
 arg_modules=
 arg_extra_modules=
+arg_extra_files=
 no_module_load=0
 modules=
 hook=
@@ -56,6 +58,10 @@ while true; do
         --no-module-load)
             no_module_load=1
             shift
+            ;;
+        --extra-files)
+            arg_extra_files="$2"
+            shift 2
             ;;
         -d|--debug-shell)
             debug_shell=1
@@ -229,6 +235,14 @@ function handle_ramdisk_hooks() {
     fi
 }
 
+function handle_ramdisk_files() {
+    extra_files="${arg_extra_files//,/ }"
+    mkdir -p out/ramdisk/extra-files
+    for file in $extra_files; do
+        cp -v "$file" out/ramdisk/extra-files/
+    done
+}
+
 function handle_ramdisk() {
     # Extract original ramdisk
     # TODO: Breaks with MTK ramdisk header
@@ -239,6 +253,7 @@ function handle_ramdisk() {
 
     handle_ramdisk_modules
     handle_ramdisk_hooks
+    handle_ramdisk_files
 
     # Repack ramdisk
     pushd out/ramdisk >/dev/null
