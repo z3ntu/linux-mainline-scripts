@@ -19,11 +19,12 @@ function usage() {
     echo " --no-module-load             disable automatic loading of modules in ramdisk"
     echo " --extra-files                comma-separated list to copy into the ramdisk into /extra-files/"
     echo " -d, --debug-shell            boot into debug-shell"
+    echo " --earlycon                   enable earlycon"
     echo " --hook=HOOK                  enable specified hook"
     echo " -h, --help                   show this help text"
 }
 
-LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,debug-shell,help,hook:
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,debug-shell,help,hook:,earlycon
 OPTIONS=pm:e::dh
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -41,6 +42,7 @@ no_module_load=0
 modules=
 hook=
 debug_shell=0
+earlycon=0
 while true; do
     case "$1" in
         -p|--modules-pmaports)
@@ -66,6 +68,10 @@ while true; do
             ;;
         -d|--debug-shell)
             debug_shell=1
+            shift
+            ;;
+        --earlycon)
+            earlycon=1
             shift
             ;;
         --hook)
@@ -168,6 +174,12 @@ cmdline=$(cat "$DIR"/files/"$device".cmdline)
 if [ "$debug_shell" -eq 1 ]; then
     echo "Enabling boot into debug-shell."
     cmdline="$cmdline pmos.debug-shell"
+fi
+
+if [ "$earlycon" -eq 1 ]; then
+    echo "Enabling earlycon."
+    cmdline_earlycon="$(cat "$DIR"/files/"$device".cmdline-earlycon)"
+    cmdline="$cmdline $cmdline_earlycon"
 fi
 
 mkdir -p out/
