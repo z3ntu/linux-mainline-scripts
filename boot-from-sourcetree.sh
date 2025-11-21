@@ -25,7 +25,7 @@ function usage() {
 }
 
 LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,debug-shell,help,hook:,earlycon
-OPTIONS=pm:e::dh
+OPTIONS=pm:e:dh
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [ "$?" -ne 0 ]; then
