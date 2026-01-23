@@ -107,10 +107,11 @@ source "$device_dir"/deviceinfo
 
 # Process more arguments
 if [ "$arg_modules_pmaports" -eq 1 ]; then
+    modules="$(tr '\n' ' ' < "$pmaports_dir"/main/postmarketos-initramfs/00-default.modules)"
     if [ -f "$device_dir"/modules-initfs.mainline ]; then
-        modules="$(tr '\n' ' ' < "$device_dir"/modules-initfs.mainline)"
+        modules="$modules $(tr '\n' ' ' < "$device_dir"/modules-initfs.mainline)"
     elif [ -f "$device_dir"/modules-initfs ]; then
-        modules="$(tr '\n' ' ' < "$device_dir"/modules-initfs)"
+        modules="$modules $(tr '\n' ' ' < "$device_dir"/modules-initfs)"
     else
         echo "Failed to find deviceinfo_modules_initfs"
         exit 5
@@ -191,12 +192,18 @@ ramdisk="$DIR"/files/ramdisk-"$device".cpio.gz_debug
 function copy_module {
     module=$1
     results=($(echo "$all_modules" | grep "/$module.ko" || true))
-    if [ ${#results[@]} -ne 1 ]; then
-        echo "Didn't find one result for '$module.ko': ${results[@]}"
+    if [ ${#results[@]} -eq 0 ]; then
+        echo "WARNING: Couldn't find module '$module'. Ignoring..."
+        return
+    elif [ ${#results[@]} -ne 1 ]; then
+        echo "Found more than one result for '$module.ko': ${results[@]}"
         exit 1
     fi
 
     dst=out/ramdisk/lib/modules/$KERNELRELEASE/kernel/${results[0]}
+    if [ -f "$dst" ]; then
+        return
+    fi
     mkdir -p "$(dirname "$dst")"
     cp "${results[0]}" "$dst"
 
