@@ -18,13 +18,14 @@ function usage() {
     echo " -e, --extra-modules=MODULES  comma-separated list of modules to append to existing list (to be used with --modules-pmaports)"
     echo " --no-module-load             disable automatic loading of modules in ramdisk"
     echo " --extra-files                comma-separated list to copy into the ramdisk into /extra-files/"
+    echo " --extra-cmdline              extra kernel command line parameters to pass to the kernel"
     echo " -d, --debug-shell            boot into debug-shell"
     echo " --earlycon                   enable earlycon"
     echo " --hook=HOOK                  enable specified hook"
     echo " -h, --help                   show this help text"
 }
 
-LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,debug-shell,help,hook:,earlycon
+LONGOPTS=modules-pmaports,modules:,extra-modules:,no-module-load,extra-files:,extra-cmdline:,debug-shell,help,hook:,earlycon
 OPTIONS=pm:e:dh
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -38,6 +39,7 @@ arg_modules_pmaports=0
 arg_modules=
 arg_extra_modules=
 arg_extra_files=
+arg_extra_cmdline=
 no_module_load=0
 modules=
 hook=
@@ -64,6 +66,10 @@ while true; do
             ;;
         --extra-files)
             arg_extra_files="$2"
+            shift 2
+            ;;
+        --extra-cmdline)
+            arg_extra_cmdline="$2"
             shift 2
             ;;
         -d|--debug-shell)
@@ -181,6 +187,10 @@ if [ "$earlycon" -eq 1 ]; then
     echo "Enabling earlycon."
     cmdline_earlycon="$(cat "$DIR"/files/"$device".cmdline-earlycon)"
     cmdline="$cmdline $cmdline_earlycon"
+fi
+
+if [ -n "$arg_extra_cmdline" ]; then
+    cmdline="$cmdline $arg_extra_cmdline"
 fi
 
 mkdir -p out/
