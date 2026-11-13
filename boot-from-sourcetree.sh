@@ -2,8 +2,8 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-if [ ! -f arch/arm/boot/zImage ] && [ ! -f arch/arm64/boot/Image.gz ]; then
-    echo "Please run from the linux source tree with arch/arm/boot/zImage or arch/arm64/boot/Image.gz"
+if [ ! -f arch/arm/boot/zImage ] && [ ! -f arch/arm64/boot/Image.gz ] && [ ! -f arch/arm64/boot/vmlinuz ]; then
+    echo "Please run from the linux source tree with arch/arm/boot/zImage or arch/arm64/boot/Image.gz or arch/arm64/boot/vmlinuz"
     exit 1
 fi
 
@@ -157,11 +157,18 @@ case "$deviceinfo_arch" in
         kernel_image="arch/arm/boot/zImage-dtb"
         ;;
     aarch64)
-        if [ "$deviceinfo_header_version" -eq 2 ]; then
-            kernel_image="arch/arm64/boot/Image.gz"
+        # If CONFIG_EFI_ZBOOT=y then vmlinuz is produced, otherwise Image.gz. They should be equivalent otherwise.
+        if grep -q -x CONFIG_EFI_ZBOOT=y .config; then
+            image_name=vmlinuz
         else
-            cat arch/arm64/boot/Image.gz arch/arm64/boot/dts/"$dtb".dtb > arch/arm64/boot/Image.gz-dtb
-            kernel_image="arch/arm64/boot/Image.gz-dtb"
+            image_name=Image.gz
+        fi
+        echo "INFO: Using image $image_name"
+        if [ "$deviceinfo_header_version" -eq 2 ]; then
+            kernel_image="arch/arm64/boot/$image_name"
+        else
+            cat arch/arm64/boot/"$image_name" arch/arm64/boot/dts/"$dtb".dtb > arch/arm64/boot/"$image_name"-dtb
+            kernel_image="arch/arm64/boot/$image_name-dtb"
         fi
         ;;
     *)
